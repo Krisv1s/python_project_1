@@ -157,8 +157,8 @@ def create_event(
     description: Optional[str] = Form(None),
     status: str = Form("planning"),
     location: str = Form(...),
-    start_at: str = Form(...),
-    end_at: str = Form(...),
+    start_at: datetime = Form(...),
+    end_at: datetime = Form(...),
     price: float = Form(...),
     visitor_limit: str = Form(None),
     db: Session = Depends(get_db)
@@ -189,8 +189,8 @@ def update_event(
     description: Optional[str] = Form(None),
     status: str = Form("planning"),
     location: str = Form(...),
-    start_at: str = Form(...),
-    end_at: str = Form(...),
+    start_at: datetime = Form(...),
+    end_at: datetime = Form(...),
     price: float = Form(...),
     visitor_limit: str = Form(None),
     db: Session = Depends(get_db)
@@ -400,6 +400,12 @@ def create_registration(
     db_event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if db_event is None:
         raise HTTPException(status_code=404, detail="Event not found")
+    registration = db.query(models.Registration).filter(
+        models.Registration.event_id == event_id,
+        models.Registration.visitor_id == visitor_id
+    ).first()
+    if registration is not None:
+        raise HTTPException(status_code=400, detail="Registration with this params already exists")
     price = db_event.price
     status = "unpaid"
     if not price:

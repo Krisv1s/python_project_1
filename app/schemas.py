@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, EmailStr, validators, Field, validator
 
-EVENT_STATUSES = ["planning", "ready", "active", "completed", "canceled"]
+EVENT_STATUSES = ["planning", "ready", "active", "completed", "cancelled"]
 class BaseSchema(BaseModel):
     id: int
     created_at: datetime
