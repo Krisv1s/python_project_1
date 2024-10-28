@@ -34,7 +34,7 @@
   </label>
   <button type="submit">Фильтр</button>
 </form>
-<a href="/registrations/create/">Зарегистрировать посетителя</a>
+<a href="/api/registrations/create/">Зарегистрировать посетителя</a>
 <table role="table" aria-label="Таблица Регистраций">
   <thead>
   <tr>
@@ -75,7 +75,7 @@
       <a href="{{ url_for('update_registration_form', registration_id = registration.id) }}">Обновить</a>
     </td>
     <td>
-      <a href="{{ url_for('delete_registration', registration_id = registration.id) }}">Удалить</a>
+      <a class="del" href="javascript://" data-href="{{ url_for('delete_registration', registration_id = registration.id) }}">Удалить</a>
     </td>
   </tr>
   {% endfor %}

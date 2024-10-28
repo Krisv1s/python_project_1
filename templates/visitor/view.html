@@ -51,5 +51,5 @@
     </tbody>
 </table>
 <a href="{{ url_for('update_visitor_form', visitor_id = visitor.id) }}">Обновить</a>
-<a href="{{ url_for('delete_visitor', visitor_id = visitor.id) }}">Удалить</a>
+<a class="del" href="javascript://" data-href="{{ url_for('delete_visitor', visitor_id = visitor.id) }}">Удалить</a>
 {% endblock %}

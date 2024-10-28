@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, validators, Field, validator
+from pydantic import BaseModel, EmailStr, Field, validator
 
 EVENT_STATUSES = ["planning", "ready", "active", "completed", "cancelled"]
 class BaseSchema(BaseModel):
@@ -36,6 +36,8 @@ class EventBase(BaseModel):
 
 class EventCreate(EventBase):
     pass
+class EventUpdate(EventBase):
+    pass
 
 class Event(EventBase, BaseSchema):
     pass
@@ -45,6 +47,9 @@ class VisitorBase(BaseModel):
     last_name: str = Field(..., description="Фамилия")
     phone: str = Field(..., description="Телефон")
     email: EmailStr = Field(None, description="Почта")
+
+class VisitorUpdate(VisitorBase):
+    pass
 
 class VisitorCreate(VisitorBase):
     pass
@@ -60,12 +65,38 @@ class RegistrationBase(BaseModel):
     price: Optional[int] = Field(None, description="Цена")
     billed_amount: Optional[int] = Field(None, description="Оплаченная сумма")
     refund_amount: Optional[int] = Field(None, description="Сумма возврата")
-    billed_at: datetime = Field(None, description="Оплата в")
-    refunded_at: datetime = Field(None, description="Возврат в")
+    billed_at: Optional[datetime] = Field(None, description="Оплата в")
+    refunded_at: Optional[datetime] = Field(None, description="Возврат в")
 
+
+class RegistrationUpdate(BaseModel):
+    status: str = Field("unpaid", description="Статус регистрации")
+    billed_amount: Optional[str] = Field(None, description="Оплаченная сумма")
+    refund_amount: Optional[str] = Field(None, description="Сумма возврата")
+    billed_at: Optional[datetime] = Field(None, description="Оплата в")
+    refunded_at: Optional[datetime] = Field(None, description="Возврат в")
 
 class RegistrationCreate(RegistrationBase):
     pass
 
 class Registration(RegistrationBase, BaseSchema):
     pass
+
+class BaseResponse(BaseModel):
+    status: str
+    redirect_url: str
+
+class DeleteResponse(BaseResponse):
+    pass
+
+class UpdateResponse(BaseResponse):
+    pass
+
+class EventUpdateResponse(UpdateResponse):
+    event: Event
+
+class VisitorUpdateResponse(UpdateResponse):
+    visitor: Visitor
+
+class RegistrationUpdateResponse(UpdateResponse):
+    registration: Registration

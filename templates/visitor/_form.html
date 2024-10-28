@@ -15,5 +15,5 @@
     <input type="email" name="email" value="{{ visitor.email if visitor else '' }}">
   </label>
     <br>
-  <input type="submit" value="{{ 'Создать' if not visitor else 'Обновить' }}">
+  <input id="{% if visitor %}update{% else %} submit {% endif %}"  type="submit" value="{{ 'Создать' if not visitor else 'Обновить' }}">
 </form>

@@ -6,13 +6,13 @@
 {% block content %}
 <form action="{{ request.url.path }}" method="post">
   <label>Оплаченная сумма:
-    <input type="number" name="billed_amount" value="{{ registration.billed_amount }}">
+    <input type="number" max="{{ registration.price }}" name="billed_amount" value="{{ registration.billed_amount }}">
   </label>
   <br>
   <label>Сумма Возврата:
-    <input type="number" name="refund_amount" value="{{ registration.refund_amount}}">
+    <input type="number" max="{{ registration.billed_amount or 0 }}" name="refund_amount" value="{{ registration.refund_amount}}">
   </label>
   <br>
-  <input type="submit" value="Сохранить">
+  <input id="update" type="submit" value="Сохранить">
 </form>
 {% endblock %}

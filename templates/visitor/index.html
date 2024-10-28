@@ -11,7 +11,7 @@
   </label>
   <button type="submit">Поиск</button>
 </form>
-<a href="/visitors/create/">Создать посетителя</a>
+<a href="/api/visitors/create/">Создать посетителя</a>
 <table role="table" aria-label="Таблица Посетителей">
   <thead>
   <tr>
@@ -42,7 +42,7 @@
       <a href="{{ url_for('update_visitor_form', visitor_id = visitor.id) }}">Обновить</a>
     </td>
     <td>
-      <a href="{{ url_for('delete_visitor', visitor_id = visitor.id) }}">Удалить</a>
+      <a class=".del" href="javascript://" data-href="{{ url_for('delete_visitor', visitor_id = visitor.id) }}">Удалить</a>
     </td>
   </tr>
   {% endfor %}

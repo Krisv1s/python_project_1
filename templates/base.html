@@ -7,11 +7,53 @@
     <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
 </head>
 <body>
+<script>
+    const handle = function (method, url, data=null){
+        const params = {};
+        if(data){
+            params["headers"] = {
+                    'Content-Type': 'application/json'
+            };
+            params["body"] = JSON.stringify(Object.fromEntries(data));
+        }
+        fetch(url, {
+          method: method,
+          ...params
+        }).then(response => {
+          if (response.ok) {
+            return response.json();
+          } else {
+            throw new Error('Request failed');
+          }
+        }).then(data => {
+          window.location.replace(data.redirect_url);
+        }).catch(error => {
+          console.error('Error:', error);
+        });
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const elementsToDelete = document.querySelectorAll('.del');
+        elementsToDelete.forEach(element => {
+            element?.addEventListener('click', function(e) {
+                e.preventDefault()
+                const url = this.getAttribute('data-href');
+                handle("DELETE", url);
+            });
+        });
+        document.getElementById("update")?.addEventListener('click', function(event) {
+            event.preventDefault();
+            const form = this.closest('form');
+            const url = form.action;
+            const data = new FormData(form);
+            handle("PUT", url, data);
+        });
+    });
+</script>
     <header>
         <nav class="navbar" role="navigation" aria-label="Навигация">
-            <a href="/events/" aria-label="Мероприятия">Мероприятия</a>
-            <a href="/visitors/" aria-label="Посетители">Посетители</a>
-            <a href="/registrations/" aria-label="Регистрации">Регистрации</a>
+            <a href="/api/events/" aria-label="Мероприятия">Мероприятия</a>
+            <a href="/api/visitors/" aria-label="Посетители">Посетители</a>
+            <a href="/api/registrations/" aria-label="Регистрации">Регистрации</a>
         </nav>
         <h1>{% block heading %}Event Admin{% endblock %}</h1>
     </header>

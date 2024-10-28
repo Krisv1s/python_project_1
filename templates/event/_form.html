@@ -16,7 +16,7 @@
   </label>
     <br>
   <label>Место проведения события:
-    <input name="location" value="{{ event.location if event else '' }}" required>
+    <input id="{% if visitor %}update{% else %} submit {% endif %}" name="location" value="{{ event.location if event else '' }}" required>
   </label>
     <br>
   <label>Дата начала:
