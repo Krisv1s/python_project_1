@@ -1,17 +1,19 @@
+"""main"""
 import traceback
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import JSONResponse
 
-from .database import engine, Base
+# from .database import engine, Base
 from .routes import api
 
 app = FastAPI()
 
 
 @app.exception_handler(Exception)
-async def internal_server_error_handler(request: Request, exc: Exception):
+async def internal_server_error_handler(_request: Request, exc: Exception):
+    """internal server error"""
     stack_trace = traceback.format_exc()
 
     error_line = stack_trace.splitlines()[-1]
