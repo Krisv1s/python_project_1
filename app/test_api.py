@@ -43,7 +43,7 @@ def db():
 
 
 @pytest.fixture(scope="module")
-def client(_db):
+def client(db): # pylint: disable=W0613
     """client"""
     with TestClient(app) as client:
         yield client
@@ -126,7 +126,7 @@ def test_read_event_not_found(client):
     assert response.status_code == 404
 
 
-def test_create_event(client, _db):
+def test_create_event(client):
     """create_event"""
     response = client.post(
         "/api/events/create/",
@@ -238,7 +238,7 @@ def test_read_visitor_not_found(client):
     assert response.status_code == 404
 
 
-def test_create_visitor(client, _db):
+def test_create_visitor(client):
     """create_visitor"""
     response = client.post(
         "/api/visitors/create/",
