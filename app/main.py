@@ -29,5 +29,5 @@ async def internal_server_error_handler(request: Request, exc: Exception):
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 app.include_router(api)
