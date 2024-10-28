@@ -25,7 +25,6 @@ from .schemas import (
 from .utils import order_query, build_url_with_query, format_price, format_datetime_ru
 
 api = APIRouter(
-    prefix="/api",
     tags=["API"],
 )
 
