@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, TIMESTAMP, func, event, and_, select
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Session
 from sqlalchemy.sql.functions import coalesce
 
 from .database import Base
@@ -54,25 +54,23 @@ class Registration(Base):
     updated_at = Column(TIMESTAMP, server_default=func.now())
 
 def update_event_after_paid(mapper, connection, target):
-    status = target.event.status
+    db = Session(bind=connection)
+    db_event = db.query(Event).filter(Event.id == target.event_id).first()
     if (target.status == "paid"
-            and target.event.visitor_limit is not None
-            and target.event.visitor_limit > 0):
+            and db_event.visitor_limit is not None
+            and db_event.visitor_limit > 0):
         registration_count = connection.execute(
             select(func.count()).select_from(Registration).where(
                 Registration.event_id == target.event_id,
                 Registration.status == "paid"
             )
         ).scalar()
-        if registration_count >= target.event.visitor_limit:
-            status = "ready"
+        if registration_count >= db_event.visitor_limit:
+            db_event.status = "ready"
     elif target.status == "refunded":
-        status = "planning"
-    connection.execute(
-        Event.__table__.update().where(
-            Event.id == target.event_id,
-        ).values(status=status)
-    )
+        db_event.status = "planning"
+    db.commit()
+    db.refresh(db_event)
 
 
 def before_update_event_handler(mapper, connection, target):
