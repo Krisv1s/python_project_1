@@ -6,11 +6,11 @@ from fastapi.responses import HTMLResponse
 from pydantic import EmailStr
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from starlette.responses import RedirectResponse, JSONResponse
+from starlette.responses import RedirectResponse
 from starlette.templating import Jinja2Templates
 
-from .database import get_db
 from . import models, schemas
+from .database import get_db
 from .schemas import EventBase, VisitorBase, RegistrationBase, DeleteResponse, VisitorUpdateResponse, \
     EventUpdateResponse, RegistrationUpdateResponse
 from .utils import order_query, build_url_with_query, format_price, format_datetime_ru
@@ -20,27 +20,27 @@ api = APIRouter(
     tags=["API"],
 )
 
-
 templates = Jinja2Templates(directory="templates")
 templates.env.filters["format_price"] = format_price
 templates.env.filters["format_datetime_ru"] = format_datetime_ru
 
+
 @api.get("/", response_class=HTMLResponse)
 def get_route(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, 'index.html')
 
 
 @api.get("/events/", response_class=HTMLResponse)
 def get_events(
         request: Request,
         db: Session = Depends(get_db),
-        visitor_id = Query(None),
+        visitor_id=Query(None),
         sort_by: str = Query(None),
         sort_order: int = Query(None),
         search: str = Query(None),
         status: str = Query(None)
-    ):
-    if not (visitor_id=="" or visitor_id is None or visitor_id.isdigit()):
+):
+    if not (visitor_id == "" or visitor_id is None or visitor_id.isdigit()):
         raise HTTPException(status_code=400, detail="Invalid visitor id")
     query = db.query(models.Event)
     if visitor_id:
@@ -55,7 +55,7 @@ def get_events(
         query = query.filter(models.Event.status == status)
     query = order_query(models.Event, query, sort_by, sort_order)
     events = query.all()
-    return templates.TemplateResponse("event/index.html", {
+    return templates.TemplateResponse(request, "event/index.html", {
         "request": request,
         "events": events,
         "sort_by": sort_by,
@@ -65,6 +65,7 @@ def get_events(
         "status": status
     })
 
+
 @api.get("/events/{event_id}", response_model=schemas.Event)
 def read_event(event_id: int, request: Request, db: Session = Depends(get_db)):
     db_event = db.query(models.Event).filter(models.Event.id == event_id).first()
@@ -72,14 +73,14 @@ def read_event(event_id: int, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Event not found")
     visitors = db.query(models.Visitor).join(models.Registration).filter(models.Registration.event_id == event_id).all()
     total_income = db.query(func.sum(
-        func.coalesce(models.Registration.billed_amount, 0) - func.coalesce(models.Registration.refund_amount,0)
+        func.coalesce(models.Registration.billed_amount, 0) - func.coalesce(models.Registration.refund_amount, 0)
     )).filter(
         models.Registration.event_id == event_id).scalar() or 0
     expected_income = db.query(func.sum(
         func.coalesce(models.Registration.price, 0)
     )).filter(
         models.Registration.event_id == event_id).scalar() or 0
-    return templates.TemplateResponse("event/view.html", {
+    return templates.TemplateResponse(request, "event/view.html", {
         "request": request,
         "event": db_event,
         "visitors": visitors,
@@ -88,33 +89,38 @@ def read_event(event_id: int, request: Request, db: Session = Depends(get_db)):
         "build_url_with_query": build_url_with_query
     })
 
+
 @api.get("/events/create/", response_class=HTMLResponse, description="Страница создания события")
 def create_event_form(request: Request):
-    return templates.TemplateResponse("event/create.html", {
+    return templates.TemplateResponse(request, "event/create.html", {
         "request": request,
         "statuses": schemas.EVENT_STATUSES,
     })
+
+
 @api.get("/events/{event_id}/update/", response_class=HTMLResponse)
 def update_event_form(event_id: int, request: Request, db: Session = Depends(get_db)):
     db_event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if db_event is None:
         raise HTTPException(status_code=404, detail="Event not found")
-    return templates.TemplateResponse("event/update.html", {
+    return templates.TemplateResponse(request, "event/update.html", {
         "request": request,
         "event": db_event,
         "statuses": schemas.EVENT_STATUSES,
     })
+
+
 @api.post("/events/create/", response_model=EventBase, description="Создать новое событие")
 def create_event(
-    title: str = Form(...),
-    description: Optional[str] = Form(None),
-    status: str = Form("planning"),
-    location: str = Form(...),
-    start_at: datetime = Form(...),
-    end_at: datetime = Form(...),
-    price: float = Form(...),
-    visitor_limit: str = Form(None),
-    db: Session = Depends(get_db)
+        title: str = Form(...),
+        description: Optional[str] = Form(None),
+        status: str = Form("planning"),
+        location: str = Form(...),
+        start_at: datetime = Form(...),
+        end_at: datetime = Form(...),
+        price: float = Form(...),
+        visitor_limit: str = Form(None),
+        db: Session = Depends(get_db)
 ):
     if not (visitor_limit == "" or visitor_limit is None or visitor_limit.isdigit()):
         raise HTTPException(status_code=400, detail=f"Invalid visitor limit")
@@ -130,21 +136,23 @@ def create_event(
         price=price,
         visitor_limit=visitor_limit
     )
-    db_event = models.Event(**event_data.dict())
+    db_event = models.Event(**event_data.model_dump())
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
     return RedirectResponse(url=f"/api/events/{db_event.id}", status_code=303)
+
+
 @api.put("/events/{event_id}/update/", response_model=EventUpdateResponse, description="Обновить мероприятие")
 def update_event(
-    event_id: int,
-    event: schemas.EventUpdate,
-    db: Session = Depends(get_db)
+        event_id: int,
+        event: schemas.EventUpdate,
+        db: Session = Depends(get_db)
 ):
     db_event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if db_event is None:
         raise HTTPException(status_code=404, detail="Event not found")
-    for key, value in event.dict().items():
+    for key, value in event.model_dump().items():
         setattr(db_event, key, value)
 
     db.commit()
@@ -162,8 +170,11 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {'status': 'ok', 'redirect_url': "/api/events/"}
+
+
 @api.get("/visitors/", response_class=HTMLResponse)
-def get_visitors(request: Request, db: Session = Depends(get_db), event_id: int = Query(None), sort_by: str = Query(None), sort_order: int = Query(None), search: str = Query(None)):
+def get_visitors(request: Request, db: Session = Depends(get_db), event_id: int = Query(None),
+                 sort_by: str = Query(None), sort_order: int = Query(None), search: str = Query(None)):
     query = db.query(models.Visitor)
     if event_id:
         query = query.filter(models.Registration.event_id == event_id)
@@ -175,11 +186,12 @@ def get_visitors(request: Request, db: Session = Depends(get_db), event_id: int 
         )
     query = order_query(models.Visitor, query, sort_by, sort_order)
     visitors = query.all()
-    return templates.TemplateResponse("visitor/index.html", {
+    return templates.TemplateResponse(request, "visitor/index.html", {
         "request": request,
         "visitors": visitors,
         "sort_by": sort_by,
         "sort_order": sort_order})
+
 
 @api.get("/visitors/{visitor_id}", response_model=schemas.Visitor)
 def read_visitor(visitor_id: int, request: Request, db: Session = Depends(get_db)):
@@ -187,33 +199,39 @@ def read_visitor(visitor_id: int, request: Request, db: Session = Depends(get_db
     if db_visitor is None:
         raise HTTPException(status_code=404, detail="Visitor not found")
     events = db.query(models.Event).join(models.Registration).filter(models.Registration.visitor_id == visitor_id).all()
-    return templates.TemplateResponse("visitor/view.html", {
+    return templates.TemplateResponse(request, "visitor/view.html", {
         "request": request,
         "visitor": db_visitor,
         "events": events,
         "build_url_with_query": build_url_with_query
     })
+
+
 @api.get("/visitors/create/", response_class=HTMLResponse, description="Страница создания посетителя")
 def create_visitor_form(request: Request):
-    return templates.TemplateResponse("visitor/create.html", {
+    return templates.TemplateResponse(request, "visitor/create.html", {
         "request": request,
     })
+
+
 @api.get("/visitors/{visitor_id}/update/", response_class=HTMLResponse)
 def update_visitor_form(visitor_id: int, request: Request, db: Session = Depends(get_db)):
     db_visitor = db.query(models.Visitor).filter(models.Visitor.id == visitor_id).first()
     if db_visitor is None:
         raise HTTPException(status_code=404, detail="Visitor not found")
-    return templates.TemplateResponse("visitor/update.html", {
+    return templates.TemplateResponse(request, "visitor/update.html", {
         "request": request,
         "visitor": db_visitor,
     })
+
+
 @api.post("/visitors/create/", response_model=VisitorBase, description="Создать нового посетителя")
 def create_visitor(
-    first_name: str = Form(...),
-    last_name: str = Form(...),
-    phone: str = Form(...),
-    email: Optional[EmailStr] = Form(None),
-    db: Session = Depends(get_db)
+        first_name: str = Form(...),
+        last_name: str = Form(...),
+        phone: str = Form(...),
+        email: Optional[EmailStr] = Form(None),
+        db: Session = Depends(get_db)
 ):
     visitor_data = schemas.VisitorCreate(
         first_name=first_name,
@@ -221,27 +239,31 @@ def create_visitor(
         phone=phone,
         email=email,
     )
-    db_visitor = models.Visitor(**visitor_data.dict())
+    db_visitor = models.Visitor(**visitor_data.model_dump())
     db.add(db_visitor)
     db.commit()
     db.refresh(db_visitor)
     return RedirectResponse(url=f"/api/visitors/{db_visitor.id}", status_code=303)
+
+
 @api.put("/visitors/{visitor_id}/update/", response_model=VisitorUpdateResponse, description="Обновить посетителя")
 def update_visitor(
-    visitor_id: int,
-    visitor: schemas.VisitorUpdate,
-    db: Session = Depends(get_db)
+        visitor_id: int,
+        visitor: schemas.VisitorUpdate,
+        db: Session = Depends(get_db)
 ):
     db_visitor = db.query(models.Visitor).filter(models.Visitor.id == visitor_id).first()
     if db_visitor is None:
         raise HTTPException(status_code=404, detail="Visitor not found")
 
-    for key, value in visitor.dict().items():
+    for key, value in visitor.model_dump().items():
         setattr(db_visitor, key, value)
 
     db.commit()
     db.refresh(db_visitor)
     return {"status": "ok", "redirect_url": f"/api/visitors/{db_visitor.id}", "visitor": db_visitor}
+
+
 @api.delete("/visitors/{visitor_id}/delete/", response_model=DeleteResponse)
 def delete_visitor(visitor_id: int, db: Session = Depends(get_db)):
     visitor = db.query(models.Visitor).filter(models.Visitor.id == visitor_id).first()
@@ -252,19 +274,20 @@ def delete_visitor(visitor_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {'status': 'ok', 'redirect_url': "/api/visitors/"}
 
+
 @api.get("/registrations/", response_class=HTMLResponse)
 def get_registrations(
         request: Request,
         db: Session = Depends(get_db),
-        event_id = Query(None),
-        visitor_id = Query(None),
+        event_id=Query(None),
+        visitor_id=Query(None),
         sort_by: str = Query(None),
         sort_order: int = Query(None),
         status: str = Query(None),
-    ):
+):
     if not (event_id == "" or event_id is None or event_id.isdigit()):
         raise HTTPException(status_code=400, detail=f"Invalid event id")
-    if not (visitor_id=="" or visitor_id is None or visitor_id.isdigit()):
+    if not (visitor_id == "" or visitor_id is None or visitor_id.isdigit()):
         raise HTTPException(status_code=400, detail="Invalid visitor id")
     query = db.query(models.Registration)
     events = {}
@@ -283,7 +306,7 @@ def get_registrations(
         query = query.filter(models.Event.status == status)
     query = order_query(models.Registration, query, sort_by, sort_order)
     registrations = query.all()
-    return templates.TemplateResponse("registration/index.html", {
+    return templates.TemplateResponse(request, "registration/index.html", {
         "request": request,
         "registrations": registrations,
         "sort_by": sort_by,
@@ -296,33 +319,38 @@ def get_registrations(
         "visitor_id": visitor_id
     })
 
+
 @api.get("/registrations/create/", response_class=HTMLResponse, description="Регистрация посетителя")
 def create_registration_form(request: Request, db: Session = Depends(get_db)):
     events = db.query(models.Event).filter(
         models.Event.status.notin_(['cancelled', 'completed', 'ready'])
     ).all()
     visitors = db.query(models.Visitor).all()
-    return templates.TemplateResponse("registration/create.html", {
+    return templates.TemplateResponse(request, "registration/create.html", {
         "request": request,
         "events": events,
         "visitors": visitors,
     })
+
+
 @api.get("/registrations/{registration_id}/update/", response_class=HTMLResponse)
 def update_registration_form(registration_id: int, request: Request, db: Session = Depends(get_db)):
     db_registration = db.query(models.Registration).filter(models.Registration.id == registration_id).first()
     if db_registration is None:
         raise HTTPException(status_code=404, detail="Registration not found")
-    return templates.TemplateResponse("registration/update.html", {
+    return templates.TemplateResponse(request, "registration/update.html", {
         "request": request,
         "registration": db_registration,
         "events": [db_registration.event],
         "visitors": [db_registration.visitor],
     })
+
+
 @api.post("/registrations/create/", response_model=RegistrationBase, description="Регистрация посетителя")
 def create_registration(
-    event_id: int = Form(...),
-    visitor_id: int = Form(...),
-    db: Session = Depends(get_db)
+        event_id: int = Form(...),
+        visitor_id: int = Form(...),
+        db: Session = Depends(get_db)
 ):
     db_visitor = db.query(models.Visitor).filter(models.Visitor.id == visitor_id).first()
     if db_visitor is None:
@@ -346,16 +374,19 @@ def create_registration(
         price=db_event.price,
         status=status,
     )
-    db_registration = models.Registration(**registration_data.dict())
+    db_registration = models.Registration(**registration_data.model_dump())
     db.add(db_registration)
     db.commit()
     db.refresh(db_registration)
     return RedirectResponse(url=f"/api/registrations/", status_code=303)
-@api.put("/registrations/{registration_id}/update/", response_model=RegistrationUpdateResponse, description="Обновить регистрацию")
+
+
+@api.put("/registrations/{registration_id}/update/", response_model=RegistrationUpdateResponse,
+         description="Обновить регистрацию")
 def update_registration(
-    registration_id: int,
-    registration: schemas.RegistrationUpdate,
-    db: Session = Depends(get_db)
+        registration_id: int,
+        registration: schemas.RegistrationUpdate,
+        db: Session = Depends(get_db)
 ):
     db_registration = db.query(models.Registration).filter(models.Registration.id == registration_id).first()
     if db_registration is None:
@@ -381,11 +412,13 @@ def update_registration(
         registration.status = "refunded"
         registration.refund_amount = refund_amount
         registration.refunded_at = datetime.now()
-    for key, value in registration.dict().items():
+    for key, value in registration.model_dump().items():
         setattr(db_registration, key, value)
     db.commit()
     db.refresh(db_registration)
     return {"status": "ok", "redirect_url": f"/api/registrations/", "registration": db_registration}
+
+
 @api.delete("/registrations/{registration_id}/delete/", response_model=DeleteResponse)
 def delete_registration(registration_id: int, db: Session = Depends(get_db)):
     registration = db.query(models.Registration).filter(models.Registration.id == registration_id).first()
@@ -395,4 +428,3 @@ def delete_registration(registration_id: int, db: Session = Depends(get_db)):
     db.delete(registration)
     db.commit()
     return {'status': 'ok', 'redirect_url': "/api/registrations/"}
-
