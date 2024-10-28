@@ -190,7 +190,7 @@ def create_event(
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
-    return RedirectResponse(url=f"/api/events/{db_event.id}", status_code=303)
+    return RedirectResponse(url=f"/events/{db_event.id}", status_code=303)
 
 
 @api.put(
@@ -212,7 +212,7 @@ def update_event(
     db.refresh(db_event)
     return {
         "status": "ok",
-        "redirect_url": f"/api/events/{db_event.id}",
+        "redirect_url": f"/events/{db_event.id}",
         "event": db_event,
     }
 
@@ -227,7 +227,7 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
     db.delete(event)
     db.commit()
 
-    return {"status": "ok", "redirect_url": "/api/events/"}
+    return {"status": "ok", "redirect_url": "/events/"}
 
 
 @api.get("/visitors/", response_class=HTMLResponse)
@@ -348,7 +348,7 @@ def create_visitor(
     db.add(db_visitor)
     db.commit()
     db.refresh(db_visitor)
-    return RedirectResponse(url=f"/api/visitors/{db_visitor.id}", status_code=303)
+    return RedirectResponse(url=f"/visitors/{db_visitor.id}", status_code=303)
 
 
 @api.put(
@@ -373,7 +373,7 @@ def update_visitor(
     db.refresh(db_visitor)
     return {
         "status": "ok",
-        "redirect_url": f"/api/visitors/{db_visitor.id}",
+        "redirect_url": f"/visitors/{db_visitor.id}",
         "visitor": db_visitor,
     }
 
@@ -387,7 +387,7 @@ def delete_visitor(visitor_id: int, db: Session = Depends(get_db)):
 
     db.delete(visitor)
     db.commit()
-    return {"status": "ok", "redirect_url": "/api/visitors/"}
+    return {"status": "ok", "redirect_url": "/visitors/"}
 
 
 @api.get("/registrations/", response_class=HTMLResponse)
@@ -533,7 +533,7 @@ def create_registration(
     db.add(db_registration)
     db.commit()
     db.refresh(db_registration)
-    return RedirectResponse(url="/api/registrations/", status_code=303)
+    return RedirectResponse(url="/registrations/", status_code=303)
 
 
 @api.put(
@@ -587,7 +587,7 @@ def update_registration(
     db.refresh(db_registration)
     return {
         "status": "ok",
-        "redirect_url": "/api/registrations/",
+        "redirect_url": "/registrations/",
         "registration": db_registration,
     }
 
@@ -605,4 +605,4 @@ def delete_registration(registration_id: int, db: Session = Depends(get_db)):
 
     db.delete(registration)
     db.commit()
-    return {"status": "ok", "redirect_url": "/api/registrations/"}
+    return {"status": "ok", "redirect_url": "/registrations/"}
