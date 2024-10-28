@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 EVENT_STATUSES = ["planning", "ready", "active", "completed", "cancelled"]
 class BaseSchema(BaseModel):
@@ -9,8 +9,8 @@ class BaseSchema(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    class ConfigDict:
+        from_attributes = True
 
 class EventBase(BaseModel):
     title: str = Field(..., description="Название события")
@@ -22,13 +22,13 @@ class EventBase(BaseModel):
     price: int = Field(..., description="Цена события")
     visitor_limit: Optional[int] = Field(None, description="Лимит посетителей")
 
-    @validator('price')
+    @field_validator('price')
     def price_non_negative(cls, v):
         if v < 0:
             raise ValueError('price must be non-negative')
         return v
 
-    @validator('visitor_limit')
+    @field_validator('visitor_limit')
     def visitor_limit_non_negative(cls, v):
         if v is not None and v < 0:
             raise ValueError('visitor_limit must be non-negative')
