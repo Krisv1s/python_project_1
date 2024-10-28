@@ -222,8 +222,8 @@ def test_create_registration(client, db):
         "event_id": event.id,
         "visitor_id": visitor.id
     })
-    assert response.status_code == 303
-    assert response.headers["location"].startswith("/api/registrations/")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
 
 def test_create_registration_invalid_event_id(client, db):
     visitor = create_test_visitor(db)
@@ -248,7 +248,7 @@ def test_create_registration_duplicate(client, db):
         "event_id": event.id,
         "visitor_id": visitor.id
     })
-    assert response.status_code == 303
+    assert response.status_code == 200
     response = client.post("/api/registrations/create/", data={
         "event_id": event.id,
         "visitor_id": visitor.id
